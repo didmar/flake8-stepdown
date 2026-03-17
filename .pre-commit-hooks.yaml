@@ -1,0 +1,11 @@
+- id: flake8-stepdown-check
+  name: flake8-stepdown (check)
+  entry: stepdown check
+  language: python
+  types: [python]
+
+- id: flake8-stepdown-fix
+  name: flake8-stepdown (fix)
+  entry: stepdown fix
+  language: python
+  types: [python]

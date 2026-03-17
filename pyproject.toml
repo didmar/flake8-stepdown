@@ -1,0 +1,92 @@
+[project]
+name = "flake8-stepdown"
+version = "0.1.0"
+description = "Enforce top-down / newspaper-style function ordering in Python"
+readme = "README.md"
+authors = [
+    { name = "Didier Marin", email = "mail@didiermarin.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "libcst>=1.1.0",
+]
+
+license = "MIT"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.scripts]
+stepdown = "flake8_stepdown.cli:main"
+
+[project.entry-points."flake8.extension"]
+TDP = "flake8_stepdown.flake8_plugin:TopDownChecker"
+
+[project.optional-dependencies]
+flake8 = ["flake8>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/<owner>/<project-name>"
+Repository = "https://github.com/<owner>/<project-name>"
+Issues = "https://github.com/<owner>/<project-name>/issues"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    # Rules that conflict with the ruff formatter (see https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "Q004",
+    "COM812",
+    "COM819",
+    "ISC002",
+    "E501",  # Line length enforced by the formatter (best-effort), not the linter
+    # Rules that are incompatible with each other
+    "D203",  # Incompatible with D211 (no blank line before class docstring)
+    "D213",  # Incompatible with D212 (multi-line summary on first line)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["B011", "PLR2004", "S101"]
+"tests/fixtures/*" = ["ALL"]
+"tests/snapshots/*" = ["ALL"]
+
+[tool.ty.src]
+exclude = ["tests/fixtures/*", "tests/snapshots/*"]
+
+[tool.ty.environment]
+python-version = "3.13"
+
+[tool.hatch.build.targets.wheel]
+packages = ["flake8_stepdown"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=flake8_stepdown --cov-report=term-missing --cov-fail-under=80"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.6",
+    "ty>=0.0.23",
+]
