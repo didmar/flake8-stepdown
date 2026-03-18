@@ -65,6 +65,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
 "tests/*" = ["B011", "PLR2004", "S101"]
+"benchmarks/*" = ["S101"]
 "tests/fixtures/*" = ["ALL"]
 "tests/snapshots/*" = ["ALL"]
 
@@ -78,7 +79,10 @@ python-version = "3.13"
 packages = ["flake8_stepdown"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=flake8_stepdown --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=flake8_stepdown --cov-report=term-missing --cov-fail-under=80 --benchmark-disable"
+markers = [
+    "benchmark: performance benchmark tests",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -88,6 +92,7 @@ build-backend = "hatchling.build"
 dev = [
     "pre-commit>=4.5.1",
     "pytest>=9.0.2",
+    "pytest-benchmark>=5.1.0",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.6",
     "ty>=0.0.23",
