@@ -110,6 +110,24 @@ def foo(x: int | str) -> int | str:
         assert statements[-1].bindings == frozenset({"foo"})
         assert statements[-1].is_overload_group is True
 
+    def test_bare_overload_grouping(self) -> None:
+        """Bare @overload (from typing import overload) stubs are grouped."""
+        source = """\
+from typing import overload
+
+@overload
+def foo(x: int) -> int: ...
+
+@overload
+def foo(x: str) -> str: ...
+
+def foo(x: int | str) -> int | str:
+    return x
+"""
+        statements = _parse_and_extract(source)
+        assert statements[-1].bindings == frozenset({"foo"})
+        assert statements[-1].is_overload_group is True
+
     def test_overload_not_consecutive(self) -> None:
         """Non-consecutive same-name functions are separate statements."""
         source = """\

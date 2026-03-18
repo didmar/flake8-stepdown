@@ -1,6 +1,7 @@
 """Tests for the ordering orchestrator."""
 
 import ast
+from unittest.mock import patch
 
 from flake8_stepdown.core.ordering import order_module
 
@@ -340,4 +341,19 @@ B = 2
 C = 3
 """
         result = order_module(source)
+        assert result.changed is False
+
+    def test_topological_sort_none_fallback(self) -> None:
+        """Graceful fallback when topological_sort unexpectedly returns None."""
+        source = """\
+def helper():
+    pass
+
+def main():
+    helper()
+"""
+        with patch("flake8_stepdown.core.ordering.topological_sort", return_value=None):
+            result = order_module(source)
+        # Falls back to original order — no violations
+        assert result.violations == []
         assert result.changed is False

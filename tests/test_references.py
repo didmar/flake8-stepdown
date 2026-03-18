@@ -4,7 +4,11 @@ import libcst as cst
 
 from flake8_stepdown.core.bindings import extract_bindings
 from flake8_stepdown.core.parser import segment
-from flake8_stepdown.core.references import detect_future_annotations, extract_refs
+from flake8_stepdown.core.references import (
+    _collect_body_refs,
+    detect_future_annotations,
+    extract_refs,
+)
 from flake8_stepdown.types import Statement
 
 
@@ -342,6 +346,18 @@ def foo(*args: Item):
         refs = _refs_by_name(_analyze(source))
         assert "Item" in refs["foo"][0]  # immediate
 
+    def test_star_kwarg_annotation(self) -> None:
+        """**kwargs annotation creates immediate ref."""
+        source = """\
+class Options:
+    pass
+
+def foo(**kwargs: Options):
+    pass
+"""
+        refs = _refs_by_name(_analyze(source))
+        assert "Options" in refs["foo"][0]  # immediate
+
     def test_multiple_decorators(self) -> None:
         """Multiple decorators each create immediate refs."""
         source = """\
@@ -408,3 +424,12 @@ def foo():
         module = cst.parse_module(source)
         seg = segment(module)
         assert detect_future_annotations(seg.preamble) is False
+
+
+class TestCollectBodyRefs:
+    """Tests for _collect_body_refs edge cases."""
+
+    def test_non_function_or_class_returns_empty(self) -> None:
+        """Passing a node that isn't FunctionDef/ClassDef returns empty set."""
+        node = cst.parse_statement("x = 1\n")
+        assert _collect_body_refs(node) == set()

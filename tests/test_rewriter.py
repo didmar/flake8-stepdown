@@ -6,7 +6,10 @@ import io
 import runpy
 from pathlib import Path
 
+import libcst as cst
+
 from flake8_stepdown.core.ordering import order_module
+from flake8_stepdown.rewriter import _normalize_block
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 SNAPSHOTS_DIR = Path(__file__).parent / "snapshots"
@@ -345,3 +348,15 @@ def _run_file(path: Path) -> tuple[dict[str, object], str]:
         ns = runpy.run_path(str(path), run_name="__test__")
     filtered = {k: v for k, v in ns.items() if not k.startswith("_")}
     return filtered, buf.getvalue()
+
+
+class TestNormalizeBlock:
+    """Tests for _normalize_block edge cases."""
+
+    def test_non_base_statement_skipped(self) -> None:
+        """Non-BaseStatement nodes in the list are silently skipped."""
+        # cst.EmptyLine is not a BaseStatement
+        nodes: list[cst.CSTNode] = [cst.EmptyLine()]
+        normalized, prev = _normalize_block(nodes, None)
+        assert normalized == []
+        assert prev is None

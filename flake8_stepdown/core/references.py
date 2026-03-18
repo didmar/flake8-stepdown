@@ -193,8 +193,6 @@ def _collect_default_refs(func: cst.FunctionDef) -> set[str]:
     for param in func.params.kwonly_params:
         if param.default is not None:
             names.update(_collect_names(param.default))
-    if func.params.star_kwarg and func.params.star_kwarg.default:
-        names.update(_collect_names(func.params.star_kwarg.default))
     return names
 
 

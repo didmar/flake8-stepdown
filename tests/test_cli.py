@@ -2,6 +2,7 @@
 
 import io
 import json
+import runpy
 import tempfile
 from pathlib import Path
 
@@ -96,6 +97,33 @@ def a():
         exit_code = main(["check", f1, f2])
         assert exit_code == 1  # at least one has violations
 
+    def test_no_files_specified(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """No files and no stdin returns exit code 2 with error message."""
+        exit_code = main(["check"])
+        assert exit_code == 2
+        captured = capsys.readouterr()
+        assert "no files specified" in captured.err
+
+    def test_directory_input(self) -> None:
+        """Passing a directory expands to .py files inside it."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir)
+            (p / "good.py").write_text("def a():\n    b()\n\ndef b():\n    pass\n")
+            (p / "not_python.txt").write_text("hello")
+            exit_code = main(["check", tmpdir])
+            # good.py has correct ordering, so exit 0
+            assert exit_code == 0
+
+    def test_directory_with_exclude(self) -> None:
+        """Passing a directory with --exclude filters out matching files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir)
+            (p / "good.py").write_text("def a():\n    pass\n")
+            (p / "bad.py").write_text("def b():\n    pass\n\ndef a():\n    b()\n")
+            # Exclude the file with violations
+            exit_code = main(["check", "--exclude", "*/bad.py", tmpdir])
+            assert exit_code == 0
+
 
 class TestDiffCommand:
     """Tests for the diff subcommand."""
@@ -177,3 +205,23 @@ def a():
             assert "mutual recursion" not in captured.err
         finally:
             tmp_path.unlink()
+
+
+class TestEdgeCases:
+    """Tests for edge cases and defensive code paths."""
+
+    def test_all_files_excluded(self) -> None:
+        """When all resolved files are excluded, return exit code 0."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            p = Path(tmpdir)
+            (p / "a.py").write_text("def foo():\n    pass\n")
+            exit_code = main(["check", "--exclude", "*.py", tmpdir])
+            assert exit_code == 0
+
+    @pytest.mark.filterwarnings("ignore::RuntimeWarning")
+    def test_main_entry_point(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The ``if __name__ == '__main__'`` block invokes main()."""
+        monkeypatch.setattr("sys.argv", ["stepdown", "check"])
+        with pytest.raises(SystemExit) as exc_info:
+            runpy.run_module("flake8_stepdown.cli", run_name="__main__")
+        assert exc_info.value.code == 2

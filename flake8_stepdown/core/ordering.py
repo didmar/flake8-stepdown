@@ -152,8 +152,6 @@ def _generate_violations(
                     break
                 other = statements[other_idx]
                 other_name = next(iter(other.bindings), "<unnamed>")
-                if new_position[orig_idx] < new_position[other_idx]:
-                    continue
                 violations.append(
                     Violation(
                         code="TDP001",

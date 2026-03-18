@@ -132,8 +132,6 @@ def _collect_names(target: cst.BaseExpression) -> set[str]:
         for element in target.elements:
             names |= _collect_names(element.value)
         return names
-    if isinstance(target, cst.StarredElement):
-        return _collect_names(target.value)
     return set()
 
 
