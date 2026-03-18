@@ -66,6 +66,32 @@ def main():
         result = _full_pipeline(source)
         assert result is not None
         assert result.index("def main") < result.index("def helper")
+        assert "# Helper function" in result
+
+    def test_standalone_comment_moves_with_following_function(self) -> None:
+        """Line comment between functions moves with the function below it."""
+        source = """\
+def fun_a():
+    pass
+
+# line comment
+
+def fun_b():
+    pass
+
+
+def fun_c():
+    fun_a()
+    fun_b()
+"""
+        result = _full_pipeline(source)
+        assert result is not None
+        # Comment should be preserved
+        assert "# line comment" in result
+        # Comment should appear before fun_b (it describes fun_b)
+        assert result.index("# line comment") < result.index("def fun_b")
+        # Comment should appear after fun_a (fun_b comes after fun_a in the new order)
+        assert result.index("def fun_a") < result.index("# line comment")
 
     def test_blank_line_normalization(self) -> None:
         """Exactly 2 blank lines between top-level defs after reorder."""

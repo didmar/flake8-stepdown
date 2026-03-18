@@ -86,14 +86,22 @@ def _normalize_leading_lines(
     node: cst.BaseStatement,
     desired_blanks: int,
 ) -> cst.BaseStatement:
-    """Set the number of blank lines before a statement."""
-    leading = [
-        cst.EmptyLine(
-            indent=True,
-            whitespace=cst.SimpleWhitespace(""),
-            comment=None,
-            newline=cst.Newline(value=None),
-        )
-        for _ in range(desired_blanks)
-    ]
+    """Set the number of blank lines before a statement, preserving comments."""
+    blank_line = cst.EmptyLine(
+        indent=True,
+        whitespace=cst.SimpleWhitespace(""),
+        comment=None,
+        newline=cst.Newline(value=None),
+    )
+
+    # Extract comment-bearing EmptyLines from original leading_lines
+    comment_lines: list[cst.EmptyLine] = []
+    if isinstance(node, (cst.SimpleStatementLine, cst.BaseCompoundStatement)):
+        comment_lines = [el for el in node.leading_lines if el.comment is not None]
+
+    if comment_lines:
+        # Blank lines before comments, then comments, then blank lines before the statement
+        leading = [blank_line] * desired_blanks + comment_lines + [blank_line] * desired_blanks
+    else:
+        leading = [blank_line] * desired_blanks
     return node.with_changes(leading_lines=leading)
