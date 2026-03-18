@@ -30,9 +30,9 @@ TDP = "flake8_stepdown.flake8_plugin:TopDownChecker"
 flake8 = ["flake8>=6.0"]
 
 [project.urls]
-Homepage = "https://github.com/<owner>/<project-name>"
-Repository = "https://github.com/<owner>/<project-name>"
-Issues = "https://github.com/<owner>/<project-name>/issues"
+Homepage = "https://github.com/didmar/flake8-stepdown"
+Repository = "https://github.com/didmar/flake8-stepdown"
+Issues = "https://github.com/didmar/flake8-stepdown/issues"
 
 [tool.ruff]
 line-length = 100
