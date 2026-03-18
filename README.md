@@ -98,8 +98,9 @@ This project uses [trusted publishing](https://docs.pypi.org/trusted-publishers/
 To publish a new version:
 
 1. Bump the version with `uv version --bump patch` (or `minor`/`major`)
-2. Create a GitHub release with a tag matching the version (e.g., `v0.1.0`)
-3. The publish workflow will automatically build and upload to PyPI
+2. Update `__version__` in `flake8_stepdown/__init__.py` to match
+3. Create a GitHub release with a tag matching the version (e.g., `v0.1.0`)
+4. The publish workflow will automatically build and upload to PyPI
 
 > **First-time setup:** Configure a trusted publisher on PyPI under your project's settings (Publishing tab). Use `publish.yml` as the workflow name and `publish` as the environment name.
 
