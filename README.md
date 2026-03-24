@@ -1,6 +1,7 @@
 # flake8-stepdown
 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
+[![codecov](https://codecov.io/gh/didmar/flake8-stepdown/graph/badge.svg)](https://codecov.io/gh/didmar/flake8-stepdown)
 
 A [flake8](https://flake8.pycqa.org/) plugin that enforces **top-down (newspaper-style) function ordering** in Python modules.
 
