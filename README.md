@@ -80,6 +80,23 @@ uv run pytest
 
 Tests are organized by pipeline stage (`test_parser.py`, `test_graph.py`, `test_rewriter.py`, etc.). The rewriter uses **snapshot testing**: `tests/fixtures/` contains input Python files exercising various scenarios (bottom-up ordering, mutual recursion, decorators, etc.), and `tests/snapshots/` contains the expected output after rewriting. The test suite asserts correctness against snapshots, idempotency, and syntax validity.
 
+### Robustness testing
+
+A separate script tests the plugin against real-world Python projects (click, httpx, rich, attrs, typer, pendulum, pydantic-settings) to detect crashes and code corruption:
+
+```bash
+bash tests/robustness/run_robustness.sh
+```
+
+For each project, the script:
+1. Clones the repo and installs it alongside flake8-stepdown
+2. Runs `stepdown check` and verifies it doesn't crash
+3. Runs the project's test suite (baseline)
+4. Runs `stepdown fix` and validates the rewritten code compiles
+5. Re-runs the test suite and checks for regressions
+
+See `tests/robustness/projects.json` to configure the list of target projects.
+
 ### Pre-commit hooks
 
 Pre-commit hooks are installed automatically. To run manually:

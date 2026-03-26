@@ -1,0 +1,58 @@
+[
+  {
+    "name": "click",
+    "repo": "https://github.com/pallets/click.git",
+    "ref": "main",
+    "source_dir": "src/click",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  },
+  {
+    "name": "httpx",
+    "repo": "https://github.com/encode/httpx.git",
+    "ref": "master",
+    "source_dir": "httpx",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line --ignore=tests/test_main.py",
+    "install_extras": ""
+  },
+  {
+    "name": "rich",
+    "repo": "https://github.com/Textualize/rich.git",
+    "ref": "master",
+    "source_dir": "rich",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  },
+  {
+    "name": "attrs",
+    "repo": "https://github.com/python-attrs/attrs.git",
+    "ref": "main",
+    "source_dir": "src/attr",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  },
+  {
+    "name": "typer",
+    "repo": "https://github.com/fastapi/typer.git",
+    "ref": "master",
+    "source_dir": "typer",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  },
+  {
+    "name": "pendulum",
+    "repo": "https://github.com/sdispater/pendulum.git",
+    "ref": "master",
+    "source_dir": "src/pendulum",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  },
+  {
+    "name": "pydantic-settings",
+    "repo": "https://github.com/pydantic/pydantic-settings.git",
+    "ref": "main",
+    "source_dir": "pydantic_settings",
+    "test_cmd": "python -m pytest tests/ -x -q --tb=line",
+    "install_extras": ""
+  }
+]
