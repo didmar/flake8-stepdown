@@ -83,7 +83,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     subparsers.add_parser("diff", parents=[common], help="Show unified diff")
-    subparsers.add_parser("fix", parents=[common], help="Rewrite files in place")
+    fix_parser = subparsers.add_parser("fix", parents=[common], help="Rewrite files in place")
+    fix_parser.add_argument(
+        "--stdout",
+        action="store_true",
+        help="Print fixed output to stdout instead of modifying files",
+    )
 
     return parser
 
@@ -118,7 +123,9 @@ def _process_file(filepath: str, args: argparse.Namespace) -> int:
 
     code, output = _process_source(source, filepath, args)
 
-    if args.command == "fix" and code == EXIT_VIOLATIONS and output:
+    if args.command == "fix" and getattr(args, "stdout", False):
+        _write_output(output if code == EXIT_VIOLATIONS and output else source)
+    elif args.command == "fix" and code == EXIT_VIOLATIONS and output:
         path.write_text(output)
     elif output:
         _write_output(output)

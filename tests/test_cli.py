@@ -187,6 +187,60 @@ def a():
         finally:
             tmp_path.unlink()
 
+    def test_stdout_prints_fixed_output(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """--stdout prints reordered source to stdout and leaves file unchanged."""
+        source = """\
+def b():
+    pass
+
+
+def a():
+    b()
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".py",
+            delete=False,
+        ) as f:
+            f.write(source)
+            tmp_path = Path(f.name)
+
+        try:
+            exit_code = main(["fix", "--stdout", str(tmp_path)])
+            assert exit_code == 1
+            captured = capsys.readouterr()
+            assert captured.out.index("def a") < captured.out.index("def b")
+            # File should be unchanged
+            assert tmp_path.read_text() == source
+        finally:
+            tmp_path.unlink()
+
+    def test_stdout_no_violations(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """--stdout on already correct file prints original source."""
+        source = """\
+def a():
+    b()
+
+
+def b():
+    pass
+"""
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".py",
+            delete=False,
+        ) as f:
+            f.write(source)
+            tmp_path = Path(f.name)
+
+        try:
+            exit_code = main(["fix", "--stdout", str(tmp_path)])
+            assert exit_code == 0
+            captured = capsys.readouterr()
+            assert captured.out == source
+        finally:
+            tmp_path.unlink()
+
     def test_verbose_no_change(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Fix with --verbose on already correct file shows no mutual recursion."""
         fixture = FIXTURES_DIR / "already_correct.py"
