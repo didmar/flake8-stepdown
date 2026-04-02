@@ -3,9 +3,9 @@
 import libcst as cst
 
 from flake8_stepdown.core.bindings import extract_bindings
-from flake8_stepdown.core.parser import segment
+from flake8_stepdown.core.parser import compute_line_numbers, parse_source, segment
 from flake8_stepdown.core.references import (
-    _collect_body_refs,
+    _classify_body_refs,
     detect_future_annotations,
     extract_refs,
 )
@@ -14,10 +14,9 @@ from flake8_stepdown.types import Statement
 
 def _analyze(source: str) -> list[Statement]:
     """Parse source and extract bindings + references."""
-    module = cst.parse_module(source)
-    wrapper = cst.metadata.MetadataWrapper(module)
-    positions = wrapper.resolve(cst.metadata.PositionProvider)
-    seg = segment(wrapper.module)
+    module = parse_source(source)
+    positions = compute_line_numbers(source, module)
+    seg = segment(module)
     statements = extract_bindings(seg.interstitials, positions)
     has_future = detect_future_annotations(seg.preamble)
     return extract_refs(statements, has_future_annotations=has_future)
@@ -426,10 +425,14 @@ def foo():
         assert detect_future_annotations(seg.preamble) is False
 
 
-class TestCollectBodyRefs:
-    """Tests for _collect_body_refs edge cases."""
+class TestClassifyBodyRefs:
+    """Tests for _classify_body_refs edge cases."""
 
-    def test_non_function_or_class_returns_empty(self) -> None:
-        """Passing a node that isn't FunctionDef/ClassDef returns empty set."""
+    def test_non_function_or_class_is_noop(self) -> None:
+        """Passing a node that isn't FunctionDef/ClassDef does nothing."""
         node = cst.parse_statement("x = 1\n")
-        assert _collect_body_refs(node) == set()
+        immediate: set[str] = set()
+        deferred: set[str] = set()
+        _classify_body_refs(node, 0, {}, immediate, deferred)
+        assert immediate == set()
+        assert deferred == set()

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+
 import libcst as cst
 import libcst.matchers as m
 
@@ -11,6 +13,19 @@ from flake8_stepdown.types import SegmentedModule
 def parse_source(source: str) -> cst.Module:
     """Parse Python source into a LibCST module tree."""
     return cst.parse_module(source)
+
+
+def compute_line_numbers(source: str, module: cst.Module) -> dict[cst.CSTNode, tuple[int, int]]:
+    """Compute start/end line numbers for top-level statements using the ast module.
+
+    This is much faster than libcst's MetadataWrapper + PositionProvider, which
+    deep-clones the entire tree and runs codegen to compute positions.
+    """
+    ast_tree = ast.parse(source)
+    result: dict[cst.CSTNode, tuple[int, int]] = {}
+    for cst_node, ast_node in zip(module.body, ast_tree.body, strict=False):
+        result[cst_node] = (ast_node.lineno, ast_node.end_lineno or ast_node.lineno)
+    return result
 
 
 def segment(module: cst.Module) -> SegmentedModule:

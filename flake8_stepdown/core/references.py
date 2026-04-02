@@ -111,11 +111,11 @@ def _extract_function_refs(
     immediate: set[str] = set()
     deferred: set[str] = set()
 
-    immediate.update(_collect_decorator_refs(node))
-    immediate.update(_collect_default_refs(node))
+    _collect_decorator_refs_into(node, immediate)
+    _collect_default_refs_into(node, immediate)
 
     if not has_future_annotations:
-        immediate.update(_collect_annotation_refs(node))
+        _collect_annotation_refs_into(node, immediate)
 
     _classify_body_refs(node, idx, all_bindings, immediate, deferred)
 
@@ -135,25 +135,22 @@ def _extract_class_refs(
     immediate: set[str] = set()
     deferred: set[str] = set()
 
-    immediate.update(_collect_decorator_refs(node))
+    _collect_decorator_refs_into(node, immediate)
     for arg in node.bases:
-        immediate.update(_collect_names(arg.value))
+        _walk_for_names(arg.value, immediate)
     for kw in node.keywords:
-        immediate.update(_collect_names(kw.value))
+        _walk_for_names(kw.value, immediate)
 
     body = node.body
     if isinstance(body, cst.IndentedBlock):
         for stmt in body.body:
             if isinstance(stmt, cst.FunctionDef):
-                # Method signature parts execute at class definition time → immediate
-                immediate.update(_collect_decorator_refs(stmt))
-                immediate.update(_collect_default_refs(stmt))
-                immediate.update(_collect_annotation_refs(stmt))
-                # Method body refs: function → deferred, constant/class → immediate
+                _collect_decorator_refs_into(stmt, immediate)
+                _collect_default_refs_into(stmt, immediate)
+                _collect_annotation_refs_into(stmt, immediate)
                 _classify_body_refs(stmt, idx, all_bindings, immediate, deferred)
             else:
-                # Direct class-body statements (class variables, etc.) → immediate
-                immediate.update(_collect_names(stmt))
+                _walk_for_names(stmt, immediate)
 
     return immediate, deferred
 
@@ -166,7 +163,11 @@ def _classify_body_refs(
     deferred: set[str],
 ) -> None:
     """Classify body refs as immediate or deferred based on binding kind."""
-    for name in _collect_body_refs(node):
+    if not isinstance(node, (cst.FunctionDef, cst.ClassDef)):
+        return
+    body_names: set[str] = set()
+    _walk_for_names(node.body, body_names)
+    for name in body_names:
         if name not in all_bindings or all_bindings[name][0] == idx:
             continue
         _, kind = all_bindings[name]
@@ -176,50 +177,46 @@ def _classify_body_refs(
             immediate.add(name)
 
 
-def _collect_decorator_refs(node: cst.FunctionDef | cst.ClassDef) -> set[str]:
-    """Collect name references from decorators."""
-    names: set[str] = set()
+def _collect_decorator_refs_into(node: cst.FunctionDef | cst.ClassDef, names: set[str]) -> None:
+    """Collect name references from decorators into the provided set."""
     for decorator in node.decorators:
-        names.update(_collect_names(decorator.decorator))
-    return names
+        _walk_for_names(decorator.decorator, names)
 
 
-def _collect_default_refs(func: cst.FunctionDef) -> set[str]:
-    """Collect name references from default argument values."""
-    names: set[str] = set()
+def _collect_default_refs_into(func: cst.FunctionDef, names: set[str]) -> None:
+    """Collect name references from default argument values into the provided set."""
     for param in func.params.params:
         if param.default is not None:
-            names.update(_collect_names(param.default))
+            _walk_for_names(param.default, names)
     for param in func.params.kwonly_params:
         if param.default is not None:
-            names.update(_collect_names(param.default))
-    return names
+            _walk_for_names(param.default, names)
 
 
-def _collect_annotation_refs(func: cst.FunctionDef) -> set[str]:
-    """Collect name references from type annotations in signature."""
-    names: set[str] = set()
+def _collect_annotation_refs_into(func: cst.FunctionDef, names: set[str]) -> None:
+    """Collect name references from type annotations in signature into the provided set."""
     for param in (*func.params.params, *func.params.kwonly_params, *func.params.posonly_params):
         if param.annotation is not None:
-            names.update(_collect_annotation_names(param.annotation.annotation))
+            _walk_for_names(param.annotation.annotation, names)
+            _collect_string_annotation_into(param.annotation.annotation, names)
     if func.params.star_kwarg and func.params.star_kwarg.annotation:
-        names.update(_collect_annotation_names(func.params.star_kwarg.annotation.annotation))
+        _walk_for_names(func.params.star_kwarg.annotation.annotation, names)
+        _collect_string_annotation_into(func.params.star_kwarg.annotation.annotation, names)
     star_arg = func.params.star_arg
     if isinstance(star_arg, cst.Param) and star_arg.annotation:
-        names.update(_collect_annotation_names(star_arg.annotation.annotation))
+        _walk_for_names(star_arg.annotation.annotation, names)
+        _collect_string_annotation_into(star_arg.annotation.annotation, names)
     if func.returns is not None:
-        names.update(_collect_annotation_names(func.returns.annotation))
-    return names
+        _walk_for_names(func.returns.annotation, names)
+        _collect_string_annotation_into(func.returns.annotation, names)
 
 
-def _collect_annotation_names(node: cst.CSTNode) -> set[str]:
-    """Collect name references from an annotation node, including string annotations."""
-    names = _collect_names(node)
+def _collect_string_annotation_into(node: cst.CSTNode, names: set[str]) -> None:
+    """Add string annotation name if the node is a SimpleString containing an identifier."""
     if isinstance(node, cst.SimpleString):
         value = node.evaluated_value
         if isinstance(value, str) and value.isidentifier():
             names.add(value)
-    return names
 
 
 def _extract_non_function_refs(
@@ -231,28 +228,16 @@ def _extract_non_function_refs(
     body_names: set[str] = set()
     for s in node.body:
         if isinstance(s, (cst.Assign, cst.AnnAssign)) and s.value is not None:
-            body_names.update(_collect_names(s.value))
+            _walk_for_names(s.value, body_names)
     return {n for n in body_names if n in all_bindings and all_bindings[n][0] != idx}
 
 
-def _collect_body_refs(node: cst.CSTNode) -> set[str]:
-    """Collect all name references from a function/class body."""
-    if isinstance(node, (cst.FunctionDef, cst.ClassDef)):
-        return _collect_names(node.body)
-    return set()
-
-
-def _collect_names(node: cst.CSTNode) -> set[str]:
-    """Collect all Name references from a CST subtree via recursive traversal."""
-    names: set[str] = set()
-    _walk_for_names(node, names)
-    return names
-
-
 def _walk_for_names(node: cst.CSTNode, names: set[str]) -> None:
-    """Recursively walk a CST node tree collecting Name values."""
-    if isinstance(node, cst.Name):
-        names.add(node.value)
-        return
-    for child in node.children:
-        _walk_for_names(child, names)
+    """Walk a CST node tree collecting Name values using an explicit stack."""
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        if isinstance(n, cst.Name):
+            names.add(n.value)
+        else:
+            stack.extend(n.children)

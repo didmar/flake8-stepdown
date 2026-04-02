@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import libcst as cst
 import pytest
 
 from flake8_stepdown.core.bindings import extract_bindings
@@ -16,12 +15,12 @@ from flake8_stepdown.core.graph import (
     find_sccs,
     topological_sort,
 )
-from flake8_stepdown.core.parser import parse_source, segment
+from flake8_stepdown.core.parser import compute_line_numbers, parse_source, segment
 from flake8_stepdown.core.references import detect_future_annotations, extract_refs
 from flake8_stepdown.types import Statement
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    import libcst as cst
 
     from flake8_stepdown.types import SegmentedModule
 
@@ -61,8 +60,7 @@ class PreparedInput:
     name: str
     source: str
     module: cst.Module
-    wrapper: cst.metadata.MetadataWrapper
-    positions: Mapping[cst.CSTNode, cst.metadata.CodeRange]
+    positions: dict[cst.CSTNode, tuple[int, int]]
     seg: SegmentedModule
     statements_with_bindings: list[Statement]
     statements_with_refs: list[Statement]
@@ -79,9 +77,8 @@ class PreparedInput:
 def _prepare(name: str, source: str) -> PreparedInput:
     """Run the full pipeline and capture each intermediate result."""
     module = parse_source(source)
-    wrapper = cst.metadata.MetadataWrapper(module)
-    positions = wrapper.resolve(cst.metadata.PositionProvider)
-    seg = segment(wrapper.module)
+    positions = compute_line_numbers(source, module)
+    seg = segment(module)
 
     if not seg.interstitials:
         # Return a minimal PreparedInput for empty modules
@@ -89,7 +86,6 @@ def _prepare(name: str, source: str) -> PreparedInput:
             name=name,
             source=source,
             module=module,
-            wrapper=wrapper,
             positions=positions,
             seg=seg,
             statements_with_bindings=[],
@@ -161,7 +157,6 @@ def _prepare(name: str, source: str) -> PreparedInput:
         name=name,
         source=source,
         module=module,
-        wrapper=wrapper,
         positions=positions,
         seg=seg,
         statements_with_bindings=statements_with_bindings,

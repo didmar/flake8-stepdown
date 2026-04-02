@@ -66,11 +66,15 @@ ignore = [
 "__init__.py" = ["F401"]
 "tests/*" = ["B011", "PLR2004", "S101"]
 "benchmarks/*" = ["S101"]
+"benchmarks/profile_stages.py" = ["T201", "PLR0915", "D103"]
+"scripts/*" = ["T201", "PLC0415", "INP001", "ANN", "D100", "D101", "D103", "C901", "PLR0912", "PERF401", "F821"]
+"scripts/example_module.py" = ["ALL"]
+"scripts/blog_example.py" = ["ALL"]
 "tests/fixtures/*" = ["ALL"]
 "tests/snapshots/*" = ["ALL"]
 
 [tool.ty.src]
-exclude = ["tests/fixtures/*", "tests/snapshots/*"]
+exclude = ["tests/fixtures/*", "tests/snapshots/*", "scripts/blog_example.py", "scripts/example_module.py"]
 
 [tool.ty.environment]
 python-version = "3.13"

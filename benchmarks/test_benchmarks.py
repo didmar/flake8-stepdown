@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import libcst as cst
 import pytest
 
 from flake8_stepdown.core.bindings import extract_bindings
@@ -15,7 +14,7 @@ from flake8_stepdown.core.graph import (
     topological_sort,
 )
 from flake8_stepdown.core.ordering import order_module
-from flake8_stepdown.core.parser import parse_source, segment
+from flake8_stepdown.core.parser import compute_line_numbers, parse_source, segment
 from flake8_stepdown.core.references import detect_future_annotations, extract_refs
 from flake8_stepdown.rewriter import rewrite
 from flake8_stepdown.types import Statement
@@ -32,21 +31,16 @@ def test_parse(benchmark: BenchmarkFixture, prepared_input: PreparedInput) -> No
     benchmark(parse_source, prepared_input.source)
 
 
-@pytest.mark.benchmark(group="metadata")
-def test_metadata(benchmark: BenchmarkFixture, prepared_input: PreparedInput) -> None:
-    """Benchmark: MetadataWrapper + resolve(PositionProvider)."""
-
-    def run() -> None:
-        wrapper = cst.metadata.MetadataWrapper(prepared_input.module)
-        wrapper.resolve(cst.metadata.PositionProvider)
-
-    benchmark(run)
+@pytest.mark.benchmark(group="line_numbers")
+def test_line_numbers(benchmark: BenchmarkFixture, prepared_input: PreparedInput) -> None:
+    """Benchmark: compute_line_numbers (replaces MetadataWrapper)."""
+    benchmark(compute_line_numbers, prepared_input.source, prepared_input.module)
 
 
 @pytest.mark.benchmark(group="segment")
 def test_segment(benchmark: BenchmarkFixture, prepared_input: PreparedInput) -> None:
     """Benchmark: segment."""
-    benchmark(segment, prepared_input.wrapper.module)
+    benchmark(segment, prepared_input.module)
 
 
 @pytest.mark.benchmark(group="bindings")

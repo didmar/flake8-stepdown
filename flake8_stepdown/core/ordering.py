@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import libcst as cst
-
 from flake8_stepdown.core.bindings import extract_bindings
 from flake8_stepdown.core.graph import (
     attach_no_binding_stmts,
@@ -11,7 +9,7 @@ from flake8_stepdown.core.graph import (
     find_sccs,
     topological_sort,
 )
-from flake8_stepdown.core.parser import parse_source, segment
+from flake8_stepdown.core.parser import compute_line_numbers, parse_source, segment
 from flake8_stepdown.core.references import detect_future_annotations, extract_refs
 from flake8_stepdown.rewriter import rewrite
 from flake8_stepdown.types import OrderingResult, Statement, Violation
@@ -35,9 +33,8 @@ def order_module(source: str, *, compute_rewrite: bool = True) -> OrderingResult
         return _EMPTY_RESULT
 
     module = parse_source(source)
-    wrapper = cst.metadata.MetadataWrapper(module)
-    positions = wrapper.resolve(cst.metadata.PositionProvider)
-    seg = segment(wrapper.module)
+    positions = compute_line_numbers(source, module)
+    seg = segment(module)
 
     if not seg.interstitials:
         return _EMPTY_RESULT

@@ -2,27 +2,22 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import libcst as cst
 import libcst.matchers as m
 
 from flake8_stepdown.types import Statement
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
 
 def extract_bindings(
     statements: list[cst.CSTNode],
-    positions: Mapping[cst.CSTNode, cst.metadata.CodeRange],
+    positions: dict[cst.CSTNode, tuple[int, int]],
 ) -> list[Statement]:
     """Extract bindings from module-level statements.
 
     Args:
         statements: The module-level CST nodes to analyze (functions, classes,
             and assignments from the reorderable zone between preamble and postamble).
-        positions: Position mapping from MetadataWrapper.resolve(PositionProvider).
+        positions: Mapping of CST node to (start_line, end_line) tuple.
 
     Groups consecutive @overload stubs with their implementation into a single Statement.
     Returns Statement objects with empty refs (to be populated by references module).
@@ -60,13 +55,13 @@ def extract_bindings(
                 and isinstance(last_node, cst.FunctionDef)
                 and not _has_overload_decorator(last_node)
             ):
-                first_pos = positions.get(group_nodes[0])
-                last_pos = positions.get(last_node)
+                first_start, _ = positions.get(group_nodes[0], (0, 0))
+                _, last_end = positions.get(last_node, (0, 0))
                 result.append(
                     Statement(
                         node=last_node,
-                        start_line=first_pos.start.line if first_pos else 0,
-                        end_line=last_pos.end.line if last_pos else 0,
+                        start_line=first_start,
+                        end_line=last_end,
                         bindings=frozenset({func_name}),
                         immediate_refs=frozenset(),
                         deferred_refs=frozenset(),
@@ -79,9 +74,7 @@ def extract_bindings(
             # Not a complete overload group — fall through to normal handling
 
         # Normal statement
-        pos = positions.get(node)
-        start_line = pos.start.line if pos else 0
-        end_line = pos.end.line if pos else 0
+        start_line, end_line = positions.get(node, (0, 0))
 
         bindings = (
             _extract_binding_names(node) if isinstance(node, cst.BaseStatement) else frozenset()

@@ -1,17 +1,15 @@
 """Tests for binding extraction."""
 
-import libcst as cst
-
 from flake8_stepdown.core.bindings import extract_bindings
+from flake8_stepdown.core.parser import compute_line_numbers, parse_source
 from flake8_stepdown.types import Statement
 
 
 def _parse_and_extract(source: str) -> list[Statement]:
-    """Parse, wrap, and extract bindings from all module-level statements."""
-    module = cst.parse_module(source)
-    wrapper = cst.metadata.MetadataWrapper(module)
-    positions = wrapper.resolve(cst.metadata.PositionProvider)
-    return extract_bindings(list(wrapper.module.body), positions)
+    """Parse and extract bindings from all module-level statements."""
+    module = parse_source(source)
+    positions = compute_line_numbers(source, module)
+    return extract_bindings(list(module.body), positions)
 
 
 def _get_bindings(source: str) -> list[frozenset[str]]:
