@@ -1,6 +1,6 @@
 [project]
 name = "flake8-stepdown"
-version = "0.1.1"
+version = "0.1.2"
 description = "Enforce top-down / newspaper-style function ordering in Python"
 readme = "README.md"
 authors = [
